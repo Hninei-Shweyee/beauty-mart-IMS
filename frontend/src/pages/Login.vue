@@ -70,17 +70,22 @@ const login = async () => {
       })
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json')
+      ? await response.json()
+      : { message: await response.text() };
 
     if (!response.ok) {
-      throw new Error(data.message || 'Login failed.');
+      throw new Error(data.message || `Login failed (${response.status}).`);
     }
 
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     router.push('/dashboard');
   } catch (error) {
-    errorMessage.value = error.message;
+    errorMessage.value = error instanceof TypeError
+      ? 'Cannot connect to the Beauty Mart server. Please try again shortly.'
+      : error.message;
   } finally {
     isLoading.value = false;
   }
